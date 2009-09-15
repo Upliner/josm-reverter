@@ -52,8 +52,8 @@
     <target name="compile" depends="init">
         <echo message="compiling sources for  ${plugin.jar} ... "/>
         <javac srcdir="src" classpath="${josm}" debug="true" destdir="${plugin.build.dir}">
-            <compilerarg value="-Xlint:deprecation"/>
-            <compilerarg value="-Xlint:unchecked"/>
+    <!--        <compilerarg value="-Xlint:deprecation"/>
+            <compilerarg value="-Xlint:unchecked"/>-->
         </javac>
     </target>
 
@@ -86,12 +86,12 @@
         ************************************************
     -->
             <manifest>
-                <attribute name="Author" value="..."/>
-                <attribute name="Plugin-Class" value="..."/>
+                <attribute name="Author" value="Upliner"/>
+                <attribute name="Plugin-Class" value="reverter.ReverterPlugin"/>
                 <attribute name="Plugin-Date" value="${version.entry.commit.date}"/>
-                <attribute name="Plugin-Description" value="..."/>
-                <attribute name="Plugin-Link" value="..."/>
-                <attribute name="Plugin-Mainversion" value="..."/>
+                <attribute name="Plugin-Description" value="View objects history and easily revert changes"/>
+                <attribute name="Plugin-Link" value="http://upliner.openstreetmap.org/"/>
+                <attribute name="Plugin-Mainversion" value="1981"/>
                 <attribute name="Plugin-Version" value="${version.entry.commit.revision}"/>
             </manifest>
         </jar>
