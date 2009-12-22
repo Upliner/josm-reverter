@@ -14,6 +14,7 @@ import java.util.List;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.openstreetmap.josm.data.coor.LatLon;
 import org.openstreetmap.josm.data.osm.OsmPrimitiveType;
 import org.openstreetmap.josm.data.osm.history.HistoryDataSet;
 import org.openstreetmap.josm.data.osm.history.HistoryOsmPrimitive;
@@ -58,6 +59,20 @@ class OsmChange {
                     getCurrentPosition()
                     +   message
             );
+        }
+        
+        protected Double getMandatoryAttributeDouble(Attributes attr, String name) throws SAXException{
+            String v = attr.getValue(name);
+            if (v == null) {
+                throwException(tr("Missing mandatory attribute ''{0}''.", name));
+            }
+            double d = 0.0;
+            try {
+                d = Double.parseDouble(v);
+            } catch(NumberFormatException e) {
+                throwException(tr("Illegal value for mandatory attribute ''{0}'' of type double. Got ''{1}''.", name, v));
+            }
+            return d;
         }
 
         protected long getMandatoryAttributeLong(Attributes attr, String name) throws SAXException{
@@ -120,21 +135,20 @@ class OsmChange {
             long changesetId = getMandatoryAttributeLong(atts,"changeset");
             boolean visible= getMandatoryAttributeBoolean(atts, "visible");
             long uid = getMandatoryAttributeLong(atts, "uid");
+
             String user = getMandatoryAttributeString(atts, "user");
             String v = getMandatoryAttributeString(atts, "timestamp");
             Date timestamp = DateUtils.fromString(v);
             HistoryOsmPrimitive primitive = null;
             if (type.equals(OsmPrimitiveType.NODE)) {
-                primitive = new HistoryNode(id,version,visible,user,uid,changesetId,timestamp);
+                double lat = getMandatoryAttributeDouble(atts, "lat");
+                double lon = getMandatoryAttributeDouble(atts, "lon");
+                primitive = new HistoryNode(id,version,visible,user,uid,changesetId,timestamp,new LatLon(lat,lon));
             } else if (type.equals(OsmPrimitiveType.WAY)) {
                 primitive = new HistoryWay(id,version,visible,user,uid,changesetId,timestamp);
             }if (type.equals(OsmPrimitiveType.RELATION)) {
                 primitive = new HistoryRelation(id,version,visible,user,uid,changesetId,timestamp);
             }
-            /*primitive.setOsmId(id, version);
-            primitive.setVisible(visible);
-            primitive.user = User.createOsmUser(uid,user);
-            primitive.setTimestamp(timestamp);*/
             return primitive;
         }
 

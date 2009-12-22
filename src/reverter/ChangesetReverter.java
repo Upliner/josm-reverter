@@ -77,8 +77,8 @@ public class ChangesetReverter {
 				missingList.add(hp);
 				continue;
 			}
-			if (hds.getHistory(hp.getId()).getLatest().getVersion() != p.getVersion())
-				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId()).getLatest().getVersion(),p.getVersion()));
+			if (hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion() != p.getVersion())
+				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion(),p.getVersion()));
 			deleteList.add(p);
 		}
 		for (HistoryOsmPrimitive hp : osmchange.modify)
@@ -90,8 +90,8 @@ public class ChangesetReverter {
 				missingList.add(hp);
 				continue;
 			}
-			if (hds.getHistory(hp.getId()).getLatest().getVersion() != p.getVersion())
-				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId()).getLatest().getVersion(),p.getVersion()));
+			if (hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion() != p.getVersion())
+				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion(),p.getVersion()));
 			modifyList.put(p.getId(),new ModifyPair(p));
 		}
 	}
@@ -104,7 +104,7 @@ public class ChangesetReverter {
 		DataSet ds = rdr.parseOsm(NullProgressMonitor.INSTANCE);
 		for (OsmPrimitive p : ds.allPrimitives())
 		{
-			p.setOsmId(p.getId(), (int)hds.getHistory(p.getId()).getLatest().getVersion());
+			p.setOsmId(p.getId(), (int)hds.getHistory(p.getId(),p.getType()).getLatest().getVersion());
   		    createList.add(p);
 		}
 		rdr = new OsmServerMultiObjectReader();
