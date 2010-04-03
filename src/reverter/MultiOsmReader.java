@@ -102,7 +102,7 @@ public class MultiOsmReader {
             osm.setDeleted(deleted);
             osm.setModified(modified);
             osm.setTimestamp(timestamp);
-            osm.user = user;
+            osm.setUser(user);
             osm.setVisible(visible);
             osm.mappaintStyle = null;
         }
@@ -184,7 +184,7 @@ public class MultiOsmReader {
                 }
                 // save generator attribute for later use when creating DataSource objects
                 generator = atts.getValue("generator");
-                ds.version = v;
+                ds.setVersion(v);
 
             } else if (qName.equals("bounds")) {
                 // new style bounds.
@@ -348,14 +348,14 @@ public class MultiOsmReader {
                 } catch(NumberFormatException e) {
                     throwException(tr("Illegal value for attribute ''version'' on OSM primitive with ID {0}. Got {1}.", Long.toString(current.id), version));
                 }
-                if (ds.version.equals("0.6")){
+                if (ds.getVersion().equals("0.6")){
                     if (current.version <= 0 && current.id > 0) {
                         throwException(tr("Illegal value for attribute ''version'' on OSM primitive with ID {0}. Got {1}.", Long.toString(current.id), version));
                     } else if (current.version < 0 && current.id  <=0) {
                         System.out.println(tr("WARNING: Normalizing value of attribute ''version'' of element {0} to {2}, API version is ''{3}''. Got {1}.", current.id, current.version, 0, "0.6"));
                         current.version = 0;
                     }
-                } else if (ds.version.equals("0.5")) {
+                } else if (ds.getVersion().equals("0.5")) {
                     if (current.version <= 0 && current.id > 0) {
                         System.out.println(tr("WARNING: Normalizing value of attribute ''version'' of element {0} to {2}, API version is ''{3}''. Got {1}.", current.id, current.version, 1, "0.5"));
                         current.version = 1;
@@ -365,12 +365,12 @@ public class MultiOsmReader {
                     }
                 } else {
                     // should not happen. API version has been checked before
-                    throwException(tr("Unknown or unsupported API version. Got {0}.", ds.version));
+                    throwException(tr("Unknown or unsupported API version. Got {0}.", ds.getVersion()));
                 }
             } else {
                 // version expected for OSM primitives with an id assigned by the server (id > 0), since API 0.6
                 //
-                if (current.id > 0 && ds.version != null && ds.version.equals("0.6")) {
+                if (current.id > 0 && ds.getVersion() != null && ds.getVersion().equals("0.6")) {
                     throwException(tr("Missing attribute ''version'' on OSM primitive with ID {0}.", Long.toString(current.id)));
                 }
             }
@@ -423,8 +423,6 @@ public class MultiOsmReader {
                                 )
                         );
                     n = new Node(id);
-                    n.incomplete = true;
-                    incomplete = true;
                 }
                 wayNodes.add(n);
             }
@@ -432,10 +430,8 @@ public class MultiOsmReader {
             if (incomplete) {
                 logger.warning(tr("Marked way {0} with {1} nodes incomplete because at least one node was missing in the " +
                         "loaded data and is therefore incomplete too.", externalWayId, w.getNodesCount()));
-                w.incomplete = true;
                 ds.addPrimitive(w);
             } else {
-                w.incomplete = false;
                 ds.addPrimitive(w);
             }
         }

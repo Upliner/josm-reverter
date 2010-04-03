@@ -34,9 +34,9 @@ public class RevertChangesetAction extends JosmAction {
 		int changesetId = dlg.ChangesetId();
 		if (changesetId == 0) return;
 		System.out.println("reverter: Reverting...");
-		ProgressMonitor progressMonitor = new PleaseWaitProgressMonitor();
+		ProgressMonitor progressMonitor = NullProgressMonitor.INSTANCE;
+		progressMonitor.beginTask("Reverting...",2);
 		try {
-			progressMonitor.beginTask("Reverting...",2);
 			ChangesetReverter rev = new ChangesetReverter(changesetId);
 			rev.DownloadOSMChange(progressMonitor);
 			progressMonitor.worked(1);
