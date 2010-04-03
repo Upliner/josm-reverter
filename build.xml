@@ -62,7 +62,7 @@
     ** dist - creates the plugin jar
     **********************************************************
     -->
-    <target name="dist" depends="compile,revision">
+    <target name="dist" depends="compile">
         <echo message="creating ${plugin.jar.name} ... "/>
         <copy todir="${plugin.build.dir}/resources">
             <fileset dir="resources"/>
@@ -92,7 +92,7 @@
                 <attribute name="Plugin-Description" value="View objects history and easily revert changes"/>
                 <attribute name="Plugin-Link" value="http://upliner.openstreetmap.org/"/>
                 <attribute name="Plugin-Mainversion" value="1981"/>
-                <attribute name="Plugin-Version" value="${version.entry.commit.revision}"/>
+                <attribute name="Plugin-Version" value="1"/>
             </manifest>
         </jar>
     </target>
