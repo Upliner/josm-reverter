@@ -15,18 +15,24 @@ import org.openstreetmap.josm.command.Command;
 import org.openstreetmap.josm.command.DeleteCommand;
 import org.openstreetmap.josm.command.SequenceCommand;
 import org.openstreetmap.josm.data.osm.Changeset;
+import org.openstreetmap.josm.data.osm.ChangesetDataSet;
 import org.openstreetmap.josm.data.osm.DataSet;
 import org.openstreetmap.josm.data.osm.OsmPrimitive;
+import org.openstreetmap.josm.data.osm.OsmPrimitiveType;
+import org.openstreetmap.josm.data.osm.PrimitiveId;
+import org.openstreetmap.josm.data.osm.ChangesetDataSet.ChangesetModificationType;
 import org.openstreetmap.josm.data.osm.history.HistoryDataSet;
 import org.openstreetmap.josm.data.osm.history.HistoryOsmPrimitive;
 import org.openstreetmap.josm.gui.progress.NullProgressMonitor;
 import org.openstreetmap.josm.gui.progress.ProgressMonitor;
+import org.openstreetmap.josm.io.MultiFetchServerObjectReader;
+import org.openstreetmap.josm.io.OsmChangesetContentParser;
 import org.openstreetmap.josm.io.OsmServerChangesetReader;
 import org.openstreetmap.josm.io.OsmTransferException;
 import org.xml.sax.SAXException;
 
 public class ChangesetReverter {
-	OsmChange osmchange;
+    ChangesetDataSet osmchange;
 	
 	private Changeset changeset;
 	private int changesetId;
@@ -38,7 +44,9 @@ public class ChangesetReverter {
 	{
 		this.changesetId = changesetId;
 		try {
-			changeset = new OsmServerChangesetReader().readChangeset(changesetId, null);
+		    OsmServerChangesetReader csr = new OsmServerChangesetReader();
+			changeset = csr.readChangeset(changesetId, NullProgressMonitor.INSTANCE);
+			osmchange = csr.downloadChangeset(changesetId, NullProgressMonitor.INSTANCE);
 		} catch (OsmTransferException e) {
 			e.printStackTrace();
 		}
@@ -63,12 +71,9 @@ public class ChangesetReverter {
 	public void DownloadOSMChange(ProgressMonitor progressMonitor) throws OsmTransferException
 	{
 		
-		osmchange = new OsmServerMultiObjectReader().parseOsmChange(changesetId, NullProgressMonitor.INSTANCE);
 		DataSet ds;
-		HistoryDataSet hds;
 		ds = Main.main.getCurrentDataSet();
-		hds = osmchange.data;
-		for (HistoryOsmPrimitive hp : osmchange.create)
+		for (HistoryOsmPrimitive hp : osmchange.getPrimitivesByModificationType(ChangesetModificationType.CREATED))
 		{
 			OsmPrimitive p = ds.getPrimitiveById(hp.getId(), hp.getType());
 			if (p == null)
@@ -77,11 +82,11 @@ public class ChangesetReverter {
 				missingList.add(hp);
 				continue;
 			}
-			if (hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion() != p.getVersion())
-				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion(),p.getVersion()));
+			if (hp.getVersion() != p.getVersion())
+				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hp.getVersion(),p.getVersion()));
 			deleteList.add(p);
 		}
-		for (HistoryOsmPrimitive hp : osmchange.modify)
+		for (HistoryOsmPrimitive hp : osmchange.getPrimitivesByModificationType(ChangesetModificationType.UPDATED))
 		{
 			OsmPrimitive p = ds.getPrimitiveById(hp.getId(), hp.getType());
 			if (p == null)
@@ -90,25 +95,24 @@ public class ChangesetReverter {
 				missingList.add(hp);
 				continue;
 			}
-			if (hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion() != p.getVersion())
-				Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hds.getHistory(hp.getId(),hp.getType()).getLatest().getVersion(),p.getVersion()));
+            if (hp.getVersion() != p.getVersion())
+                Warning(tr("Warning: version conflict in {0} id:{1} vesions: {2} and {3}",hp.getType(),hp.getId(),hp.getVersion(),p.getVersion()));
 			modifyList.put(p.getId(),new ModifyPair(p));
 		}
 	}
 	public void DownloadHistory(ProgressMonitor progressMonitor) throws OsmTransferException
 	{
-		OsmServerMultiObjectReader rdr = new OsmServerMultiObjectReader();
-		for (HistoryOsmPrimitive p : osmchange.delete)
+        OsmServerMultiObjectReader rdr = new OsmServerMultiObjectReader();
+		for (HistoryOsmPrimitive p : osmchange.getPrimitivesByModificationType(ChangesetModificationType.DELETED))
 			rdr.ReadObject(p.getId(), (int)p.getVersion()-1, p.getType(), NullProgressMonitor.INSTANCE);
-		HistoryDataSet hds = osmchange.data;
 		DataSet ds = rdr.parseOsm(NullProgressMonitor.INSTANCE);
 		for (OsmPrimitive p : ds.allPrimitives())
 		{
-			p.setOsmId(p.getId(), (int)hds.getHistory(p.getId(),p.getType()).getLatest().getVersion());
+			p.setOsmId(p.getId(), (int)osmchange.getPrimitive(p).getVersion());
   		    createList.add(p);
 		}
 		rdr = new OsmServerMultiObjectReader();
-		for (HistoryOsmPrimitive p : osmchange.modify)
+		for (HistoryOsmPrimitive p : osmchange.getPrimitivesByModificationType(ChangesetModificationType.DELETED))
 			rdr.ReadObject(p.getId(), (int)p.getVersion()-1, p.getType(), NullProgressMonitor.INSTANCE);
 		ds = rdr.parseOsm(NullProgressMonitor.INSTANCE);
 		for (OsmPrimitive p : ds.allPrimitives())
@@ -127,8 +131,18 @@ public class ChangesetReverter {
 		LinkedList<Command> cmds = new LinkedList<Command>();
 		for (OsmPrimitive p : createList)
 			cmds.add(new AddCommand(p));
-		for (ModifyPair p : modifyList.values())
-			cmds.add(new ChangeCommand(p.current,p.reverted));
+		for (ModifyPair p : modifyList.values()) {
+		    if (p.current.getType() == OsmPrimitiveType.NODE)
+			    cmds.add(new ChangeCommand(p.current,p.reverted));
+		}
+        for (ModifyPair p : modifyList.values()) {
+            if (p.current.getType() == OsmPrimitiveType.WAY)
+                cmds.add(new ChangeCommand(p.current,p.reverted));
+        }
+        for (ModifyPair p : modifyList.values()) {
+            if (p.current.getType() == OsmPrimitiveType.RELATION)
+                cmds.add(new ChangeCommand(p.current,p.reverted));
+        }
 		for (OsmPrimitive p : deleteList)
 			cmds.add(new DeleteCommand(p));
 		return new SequenceCommand(tr("Revert changeset #{0}",changesetId),cmds);
