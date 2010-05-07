@@ -13,13 +13,17 @@ import org.openstreetmap.josm.command.DeleteCommand;
 import org.openstreetmap.josm.data.osm.Changeset;
 import org.openstreetmap.josm.data.osm.ChangesetDataSet;
 import org.openstreetmap.josm.data.osm.DataSet;
+import org.openstreetmap.josm.data.osm.Node;
 import org.openstreetmap.josm.data.osm.OsmPrimitive;
 import org.openstreetmap.josm.data.osm.OsmPrimitiveType;
 import org.openstreetmap.josm.data.osm.PrimitiveId;
+import org.openstreetmap.josm.data.osm.Relation;
 import org.openstreetmap.josm.data.osm.SimplePrimitiveId;
+import org.openstreetmap.josm.data.osm.Way;
 import org.openstreetmap.josm.data.osm.ChangesetDataSet.ChangesetDataSetEntry;
 import org.openstreetmap.josm.data.osm.ChangesetDataSet.ChangesetModificationType;
 import org.openstreetmap.josm.data.osm.history.HistoryOsmPrimitive;
+import org.openstreetmap.josm.gui.layer.OsmDataLayer;
 import org.openstreetmap.josm.gui.progress.NullProgressMonitor;
 import org.openstreetmap.josm.io.OsmServerChangesetReader;
 import org.openstreetmap.josm.io.OsmTransferException;
@@ -80,9 +84,12 @@ public class ChangesetReverter {
 
 	public void RevertChangeset() throws OsmTransferException
 	{
-	    final DataSet ds = Main.main.getCurrentDataSet();
+	    final OsmDataLayer layer = Main.main.getEditLayer();
+	    final DataSet ds = layer.data;
 	    final MyCsDataset cds = new MyCsDataset(osmchange);
 	    final OsmServerMultiObjectReader rdr = new OsmServerMultiObjectReader();
+	    
+	    // Fetch objects that was updated or deleted by changeset
 	    for (Map.Entry<PrimitiveId,Integer> entry : cds.updated.entrySet()) {
 	        rdr.ReadObject(entry.getKey().getUniqueId(), entry.getValue()-1, entry.getKey().getType(),
 	                NullProgressMonitor.INSTANCE);
@@ -92,29 +99,32 @@ public class ChangesetReverter {
                     NullProgressMonitor.INSTANCE);
         }
         final DataSet nds = rdr.parseOsm(NullProgressMonitor.INSTANCE);
+        
+        // Mark objects that have visible=false to be deleted
+        LinkedList<OsmPrimitive> toDelete = new LinkedList<OsmPrimitive>();
+        for (OsmPrimitive p : nds.allPrimitives()) {
+            if (!p.isVisible()) {
+                OsmPrimitive dp = ds.getPrimitiveById(p);
+                if (dp != null) toDelete.add(dp);
+            }
+        }
+        
+        // Create commands to restore/update all affected objects 
         this.cmds = new DataSetToCmd(nds,ds).getCommandList();
-        Set<PrimitiveId> keyset = cds.created.keySet();
         
-        // Insert delete commands: first relations, then ways, then nodes
-        for (PrimitiveId id : keyset) {
-            if (id.getType() == OsmPrimitiveType.RELATION) {
-                OsmPrimitive p = ds.getPrimitiveById(id);
-                cmds.add(new DeleteCommand(p));
-            }
+        // Mark all created objects to be deleted
+        for (PrimitiveId id : cds.created.keySet()) {
+            OsmPrimitive p = ds.getPrimitiveById(id);
+            if (p != null) toDelete.add(p);
         }
-        for (PrimitiveId id : keyset) {
-            if (id.getType() == OsmPrimitiveType.WAY) {
-                OsmPrimitive p = ds.getPrimitiveById(id);
-                if (p != null) cmds.add(new DeleteCommand(p));
-            }
-        }
-        for (PrimitiveId id : keyset) {
-            if (id.getType() == OsmPrimitiveType.NODE) {
-                OsmPrimitive p = ds.getPrimitiveById(id);
-                if (p != null) cmds.add(new DeleteCommand(p));
-            }
-        }
-        
+        // Create a Command to delete all marked objects
+        List<? extends OsmPrimitive> list;
+        list = OsmPrimitive.getFilteredList(toDelete, Relation.class);
+        if (!list.isEmpty()) cmds.add(new DeleteCommand(list));
+        list = OsmPrimitive.getFilteredList(toDelete, Way.class);
+        if (!list.isEmpty()) cmds.add(new DeleteCommand(list));
+        list = OsmPrimitive.getFilteredList(toDelete, Node.class);
+        if (!list.isEmpty()) cmds.add(new DeleteCommand(list));
 	}
 	public List<Command> getCommands()
 	{

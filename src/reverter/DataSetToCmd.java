@@ -45,15 +45,18 @@ final class DataSetToCmd {
      */
     private void mergePrimitive(OsmPrimitive source) {
         if (source.isIncomplete()) return;
+        if (!source.isVisible()) return;
         OsmPrimitive target = targetDataSet.getPrimitiveById(source.getId(), source.getType());
         if (target == null) {
             switch(source.getType()) {
-            case NODE: target = new Node(source.getId(),(int)source.getVersion()); break;
-            case WAY: target = new Way(source.getId(),(int)source.getVersion()); break;
-            case RELATION: target = new Relation(source.getId(),(int)source.getVersion()); break;
+            case NODE: target = new Node(source.getId()); break;
+            case WAY: target = new Way(source.getId()); break;
+            case RELATION: target = new Relation(source.getId()); break;
             default: throw new AssertionError();
             }
             target.mergeFrom(source);
+            target.setOsmId(target.getId(), (int)source.getVersion()+1);
+            target.setModified(true);
             cmds.add(new AddCommand(target));
         } else {
             OsmPrimitive newTarget = null;
@@ -99,6 +102,7 @@ final class DataSetToCmd {
      */
     private void mergeNodeList(Way source) throws IllegalStateException {
         if (source.isIncomplete()) return;
+        if (!source.isVisible()) return;
         Way target = (Way)getMergeTarget(source);
         if (target == null)
             throw new IllegalStateException(tr("Missing merge target for way with id {0}", source.getUniqueId()));
@@ -123,6 +127,7 @@ final class DataSetToCmd {
      */
     private void mergeRelationMembers(Relation source) throws IllegalStateException {
         if (source.isIncomplete()) return;
+        if (!source.isVisible()) return;
         Relation target = (Relation) getMergeTarget(source);
         if (target == null)
             throw new IllegalStateException(tr("Missing merge target for relation with id {0}", source.getUniqueId()));
