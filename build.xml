@@ -88,9 +88,9 @@
                 <attribute name="Author" value="Upliner"/>
                 <attribute name="Plugin-Class" value="reverter.ReverterPlugin"/>
                 <attribute name="Plugin-Date" value="${version.entry.commit.date}"/>
-                <attribute name="Plugin-Description" value="View objects history and easily revert changes"/>
+                <attribute name="Plugin-Description" value="Reverts changesets"/>
                 <attribute name="Plugin-Link" value="http://upliner.openstreetmap.org/"/>
-                <attribute name="Plugin-Mainversion" value="1981"/>
+                <attribute name="Plugin-Mainversion" value="3208"/>
                 <attribute name="Plugin-Version" value="1"/>
             </manifest>
         </jar>

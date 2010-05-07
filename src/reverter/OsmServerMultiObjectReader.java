@@ -57,25 +57,5 @@ public class OsmServerMultiObjectReader extends OsmServerReader {
             activeConnection = null;
 		}
     }
-    public OsmChange parseOsmChange(int changesetId,ProgressMonitor progressMonitor) throws OsmTransferException {
-        StringBuffer sb = new StringBuffer();
-        sb.append("changeset/");
-        sb.append(changesetId);
-        sb.append("/download");
-        progressMonitor.beginTask("", 1);
-        progressMonitor.subTask(tr("Connecting to OSM server..."));
-        InputStream in = getInputStream(sb.toString(), progressMonitor.createSubTaskMonitor(1, true));
-        try {
-            rdr.ProcessData();
-            return OsmChange.parse(progressMonitor, in);
-		}/* catch (OsmTransferException e) {
-			throw e;
-		}*/ catch (Exception e) {
-            throw new OsmTransferException(e);
-		} finally
-		{
-            activeConnection = null;
-		}
-    }
 
 }

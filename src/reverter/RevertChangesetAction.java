@@ -4,9 +4,12 @@ import static org.openstreetmap.josm.tools.I18n.tr;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.util.List;
 
 import org.openstreetmap.josm.Main;
 import org.openstreetmap.josm.actions.JosmAction;
+import org.openstreetmap.josm.command.Command;
+import org.openstreetmap.josm.command.SequenceCommand;
 import org.openstreetmap.josm.gui.progress.NullProgressMonitor;
 import org.openstreetmap.josm.gui.progress.PleaseWaitProgressMonitor;
 import org.openstreetmap.josm.gui.progress.ProgressMonitor;
@@ -38,11 +41,11 @@ public class RevertChangesetAction extends JosmAction {
 		progressMonitor.beginTask("Reverting...",2);
 		try {
 			ChangesetReverter rev = new ChangesetReverter(changesetId);
-			rev.DownloadOSMChange(progressMonitor);
+			rev.RevertChangeset();
 			progressMonitor.worked(1);
-			rev.DownloadHistory(progressMonitor);
-			progressMonitor.worked(1);
-			Main.main.undoRedo.add(rev.getCommand());
+			List<Command> cmds = rev.getCommands();
+			Command cmd = new SequenceCommand(tr("Revert changeset #{0}",changesetId),cmds);
+			Main.main.undoRedo.add(cmd);
 		} catch (OsmTransferException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
