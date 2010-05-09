@@ -13,19 +13,20 @@ import org.openstreetmap.josm.io.OsmTransferException;
 import org.xml.sax.SAXException;
 
 public class OsmServerMultiObjectReader extends OsmServerReader {
-	private MultiOsmReader rdr = new MultiOsmReader();
-	public void ReadObject(long id,int version,OsmPrimitiveType type,ProgressMonitor progressMonitor) throws OsmTransferException
-	{
+    private MultiOsmReader rdr = new MultiOsmReader();
+    public void ReadObject(long id,int version,OsmPrimitiveType type,ProgressMonitor progressMonitor) throws OsmTransferException
+    {
         StringBuffer sb = new StringBuffer();
         sb.append(type.getAPIName());
         sb.append("/");
         sb.append(id);
         sb.append("/");
         sb.append(version);
+        progressMonitor.beginTask("", 1);
         InputStream in = getInputStream(sb.toString(), progressMonitor.createSubTaskMonitor(1, true));
         try {
-			rdr.AddData(in);
-		} catch (Exception e) {
+            rdr.AddData(in);
+        } catch (Exception e) {
             throw new OsmTransferException(e);
         } finally {
             progressMonitor.finishTask();
@@ -49,13 +50,13 @@ public class OsmServerMultiObjectReader extends OsmServerReader {
         try {
             rdr.ProcessData();
             return rdr.getDataSet();
-		} catch (Exception e) {
+        } catch (Exception e) {
             throw new OsmTransferException(e);
-		} finally
-		{
+        } finally
+        {
             progressMonitor.finishTask();
             activeConnection = null;
-		}
+        }
     }
 
 }

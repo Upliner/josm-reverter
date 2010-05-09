@@ -16,27 +16,24 @@ import org.openstreetmap.josm.tools.GBC;
 
 @SuppressWarnings("serial")
 public class ChangesetIdQuery extends ExtendedDialog {
-	private	JFormattedTextField tcid = new JFormattedTextField(NumberFormat.getInstance());
+    private JFormattedTextField tcid = new JFormattedTextField(NumberFormat.getInstance());
 
     public int ChangesetId()
     {
-		try
-		{
-		  return NumberFormat.getInstance().parse(tcid.getText()).intValue();
-		} catch (ParseException e)
-		{			
-		  return 0;
-		}
+        try {
+          return NumberFormat.getInstance().parse(tcid.getText()).intValue();
+        } catch (ParseException e) {            
+          return 0;
+        }
     }
-	public ChangesetIdQuery() {
-		super(Main.parent, tr("Objects history"), new String[] {"Revert","Cancel"}, true);
+    public ChangesetIdQuery() {
+        super(Main.parent, tr("Objects history"), new String[] {"Revert","Cancel"}, true);
         contentConstraints = GBC.eol().fill().insets(10,10,10,5);
         setButtonIcons(new String[] {"ok.png", "cancel.png" });
         JPanel panel = new JPanel(new GridBagLayout());
         panel.add(new JLabel(tr("Changeset id:")));
         panel.add(tcid, GBC.eol().fill(GBC.HORIZONTAL));
         setContent(panel);
-        setupDialog();		
-	}
-
+        setupDialog();        
+    }
 }

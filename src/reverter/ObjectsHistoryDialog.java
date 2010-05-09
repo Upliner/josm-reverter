@@ -12,14 +12,11 @@ import org.openstreetmap.josm.tools.GBC;
 
 @SuppressWarnings("serial")
 public class ObjectsHistoryDialog extends ExtendedDialog {
-
-
-	public ObjectsHistoryDialog() {
-		super(Main.parent, tr("Objects history"), new String[] {"Revert","Cancel"}, false);
+    public ObjectsHistoryDialog() {
+        super(Main.parent, tr("Objects history"), new String[] {"Revert","Cancel"}, false);
         contentConstraints = GBC.eol().fill().insets(10,10,10,5);
         setButtonIcons(new String[] {"ok.png", "cancel.png" });
         setContent(new JPanel(new GridBagLayout()));
-        setupDialog();		
-	}
-
+        setupDialog();        
+    }
 }
